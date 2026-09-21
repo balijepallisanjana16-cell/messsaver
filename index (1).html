@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MessSaver – Share leftover food with neighbours, not the bin</title>
+<meta name="description" content="MessSaver connects homes, restaurants and mess halls with people nearby who need a meal. Post surplus food, get matched in minutes, hand over safely with live tracking.">
+<link rel="canonical" href="https://messsaver.app/">
+<meta name="theme-color" content="#0b1410">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="MessSaver">
+<meta property="og:title" content="MessSaver – Share leftover food, not waste">
+<meta property="og:description" content="Post surplus food in seconds. Someone nearby picks it up. Nothing good goes to the bin.">
+<meta property="og:url" content="https://messsaver.app/">
+<meta property="og:image" content="https://messsaver.app/og.png">
+<meta property="og:image:alt" content="MessSaver app showing a map of nearby leftover food ready for pickup">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1410'/%3E%3Ccircle cx='32' cy='34' r='18' fill='none' stroke='%237ed957' stroke-width='6'/%3E%3Cpath d='M20 34h24' stroke='%23ffb347' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://messsaver.app/#org","name":"MessSaver","url":"https://messsaver.app/","logo":"https://messsaver.app/logo.png","sameAs":["https://twitter.com/messsaver","https://instagram.com/messsaver"],"contactPoint":{"@type":"ContactPoint","email":"hello@messsaver.app","contactType":"customer support"}},
+{"@type":"MobileApplication","name":"MessSaver","operatingSystem":"iOS, Android","applicationCategory":"LifestyleApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.8","ratingCount":"12480"},"publisher":{"@id":"https://messsaver.app/#org"}},
+{"@type":"LocalBusiness","name":"MessSaver Hyderabad Hub","address":{"@type":"PostalAddress","streetAddress":"Plot 12, Hitech City Rd","addressLocality":"Hyderabad","addressRegion":"TS","postalCode":"500081","addressCountry":"IN"},"geo":{"@type":"GeoCoordinates","latitude":17.4435,"longitude":78.3772},"openingHours":"Mo-Su 07:00-23:00","telephone":"+91-40-0000-0000","parentOrganization":{"@id":"https://messsaver.app/#org"}},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is MessSaver free?","acceptedAnswer":{"@type":"Answer","text":"Yes. MessSaver is free forever for individuals. Businesses get optional paid tools."}},
+{"@type":"Question","name":"Is the food safe?","acceptedAnswer":{"@type":"Answer","text":"Every listing carries a cook-time stamp, freshness countdown and allergen tags. Users are ID-verified and mutually rated."}},
+{"@type":"Question","name":"How do pickups work?","acceptedAnswer":{"@type":"Answer","text":"Request a listing, follow the live map to the pickup point, then confirm the handover with a 4-digit code."}}]}
+]}
+</script>
+<style>
+:root{--bg:#0b1410;--bg2:#101c16;--fg:#f3f6f1;--muted:#a3b1a6;--accent:#7ed957;--accent2:#ffb347;--danger:#ff6b6b;--card:rgba(255,255,255,.05);--border:rgba(255,255,255,.1);--r:1.4rem}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Sora,sans-serif;line-height:1.1}
+a{color:inherit}
+img{max-width:100%;display:block}
+button{font:inherit;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+/* nav */
+header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(11,20,16,.7);border-bottom:1px solid var(--border)}
+.nav{max-width:1200px;margin:auto;padding:.9rem 5vw;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.logo{font-family:Sora;font-weight:800;font-size:1.25rem;text-decoration:none;display:flex;align-items:center;gap:.5rem}
+.logo span{color:var(--accent)}
+.links{display:flex;gap:1.6rem;list-style:none}
+.links a{color:var(--muted);text-decoration:none;font-size:.95rem;font-weight:500}
+.links a:hover,.links a.active{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;padding:.8rem 1.4rem;border-radius:999px;font-weight:600;text-decoration:none;border:1px solid transparent;transition:transform .2s,box-shadow .2s,background .2s}
+.btn-p{background:var(--accent);color:#08140c;box-shadow:0 8px 24px rgba(126,217,87,.3)}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(126,217,87,.45)}
+.btn-g{border-color:var(--border);color:var(--fg);background:var(--card)}
+.btn-g:hover{background:rgba(255,255,255,.1)}
+.btn-sm{padding:.55rem 1rem;font-size:.9rem}
+.burger{display:none;background:none;border:1px solid var(--border);color:var(--fg);border-radius:.6rem;padding:.4rem .6rem}
+/* layout */
+main{min-height:70vh}
+.wrap{max-width:1200px;margin:auto;padding:0 5vw}
+section{padding:5rem 0}
+.crumbs{padding:1rem 0 0;font-size:.85rem;color:var(--muted)}
+.crumbs ol{list-style:none;display:flex;gap:.5rem;flex-wrap:wrap}
+.crumbs a{color:var(--muted);text-decoration:none}
+.crumbs a:hover{color:var(--fg)}
+.crumbs li+li::before{content:"›";margin-right:.5rem;opacity:.5}
+.eyebrow{display:inline-flex;padding:.35rem .9rem;border:1px solid var(--border);border-radius:999px;color:var(--accent);font-size:.8rem;background:var(--card);margin-bottom:1.2rem}
+.grid{display:grid;gap:1.4rem;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{padding:2rem;border-radius:var(--r);background:var(--card);border:1px solid var(--border);backdrop-filter:blur(10px);transition:transform .25s,box-shadow .25s}
+.card:hover{transform:translateY(-6px);box-shadow:0 26px 50px rgba(0,0,0,.35)}
+.icon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:1.5rem;background:linear-gradient(135deg,var(--accent),var(--accent2));margin-bottom:1.2rem}
+.card h3{font-size:1.2rem;margin-bottom:.5rem}
+.card p{color:var(--muted)}
+.head{max-width:60ch;margin-bottom:3rem}
+.head h2{font-size:clamp(1.9rem,4vw,2.8rem)}
+.head p{color:var(--muted);margin-top:.8rem}
+.muted{color:var(--muted)}
+.in{opacity:0;transform:translateY(24px);animation:in .7s ease forwards}
+@keyframes in{to{opacity:1;transform:none}}
+/* hero */
+.hero{position:relative;min-height:88vh;display:flex;align-items:center;overflow:hidden}
+.hero canvas{position:absolute;inset:0;width:100%;height:100%}
+.hero .wrap{position:relative;z-index:1}
+.hero h1{font-size:clamp(2.5rem,6vw,4.8rem);font-weight:800;max-width:15ch}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);font-size:1.15rem;max-width:52ch;margin:1.4rem 0 2.2rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.2rem}
+.stat{padding:1.6rem;border:1px solid var(--border);border-radius:var(--r);background:var(--card)}
+.stat b{display:block;font-family:Sora;font-size:2.2rem;color:var(--accent)}
+.stat span{color:var(--muted);font-size:.9rem}
+/* map page */
+.finder{display:grid;grid-template-columns:380px 1fr;gap:1.2rem;height:calc(100vh - 150px);min-height:560px;padding:1.2rem 0 2rem}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
+.panel-h{padding:1.1rem 1.2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+.panel-h h1{font-size:1.2rem}
+.filters{display:flex;gap:.5rem;padding:.8rem 1.2rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.chip{padding:.4rem .8rem;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.85rem}
+.chip.on{background:var(--accent);color:#08140c;border-color:var(--accent);font-weight:600}
+.list{overflow:auto;flex:1}
+.item{display:flex;gap:.9rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.item:hover,.item.sel{background:rgba(126,217,87,.08)}
+.item img{width:64px;height:64px;border-radius:.8rem;object-fit:cover;flex:none}
+.item h3{font-size:1rem;margin-bottom:.15rem}
+.item .meta{font-size:.82rem;color:var(--muted);display:flex;gap:.6rem;flex-wrap:wrap}
+.tag{font-size:.7rem;padding:.15rem .5rem;border-radius:999px;font-weight:600}
+.veg{background:rgba(126,217,87,.18);color:var(--accent)}
+.nonveg{background:rgba(255,107,107,.18);color:var(--danger)}
+.fresh{color:var(--accent2)}
+#map{border-radius:var(--r);border:1px solid var(--border);overflow:hidden;min-height:400px;background:#0e1a14}
+.leaflet-container{background:#0e1a14;font:inherit}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--bg2);color:var(--fg);border:1px solid var(--border)}
+.pin{width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);border:3px solid #fff;display:grid;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.pin span{transform:rotate(45deg);font-size:16px}
+.pin.me{background:#4ecdc4;border-radius:50%}
+.pin.rider{background:var(--accent2);border-radius:50%;animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,179,71,.6)}100%{box-shadow:0 0 0 18px rgba(255,179,71,0)}}
+.track{padding:1.2rem}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin:1rem 0}
+.step{height:6px;border-radius:3px;background:var(--border);position:relative}
+.step.done{background:var(--accent)}
+.step.now{background:var(--accent2);animation:pulse2 1.2s infinite}
+@keyframes pulse2{50%{opacity:.5}}
+.eta{font-family:Sora;font-size:2.4rem;color:var(--accent)}
+.code{font-family:Sora;font-size:2rem;letter-spacing:.4em;background:var(--card);border:1px dashed var(--border);border-radius:1rem;padding:.8rem;text-align:center;margin:1rem 0}
+.row{display:flex;gap:.6rem;align-items:center;justify-content:space-between}
+.toggle{display:flex;align-items:center;gap:.6rem;font-size:.9rem;color:var(--muted)}
+/* forms */
+.auth{max-width:440px;margin:3rem auto;padding:2.4rem;border-radius:var(--r);background:var(--bg2);border:1px solid var(--border)}
+.auth h1{font-size:1.8rem;margin-bottom:.4rem}
+label{display:block;font-size:.9rem;color:var(--muted);margin:1rem 0 .4rem}
+input{width:100%;padding:.85rem 1rem;border-radius:.8rem;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--fg);font:inherit;outline:none;transition:border .2s}
+input:focus{border-color:var(--accent)}
+input[aria-invalid="true"]{border-color:var(--danger)}
+.err{color:var(--danger);font-size:.82rem;margin-top:.3rem;min-height:1em}
+.full{width:100%;justify-content:center;margin-top:1.2rem}
+.divider{display:flex;align-items:center;gap:.8rem;color:var(--muted);font-size:.8rem;margin:1.2rem 0}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#08140c;padding:.8rem 1.3rem;border-radius:999px;font-weight:600;opacity:0;transition:.3s;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+.cta{text-align:center;border-radius:2rem;background:linear-gradient(135deg,rgba(126,217,87,.18),rgba(255,179,71,.12));border:1px solid var(--border);padding:4rem 2rem}
+.cta h2{font-size:clamp(1.8rem,4vw,3rem)}
+.cta p{color:var(--muted);margin:1rem auto 2rem;max-width:50ch}
+.notfound{text-align:center;padding:8rem 0}
+.notfound b{font-family:Sora;font-size:7rem;line-height:1;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;color:transparent}
+footer{border-top:1px solid var(--border);padding:3rem 5vw;color:var(--muted);font-size:.9rem}
+footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:1.2rem}
+footer nav{display:flex;gap:1.2rem;flex-wrap:wrap}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--fg)}
+@media(max-width:900px){.finder{grid-template-columns:1fr;height:auto}.panel{max-height:420px}#map{height:420px}}
+@media(max-width:720px){.links{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--bg2);padding:1.2rem 5vw;border-bottom:1px solid var(--border)}.links.open{display:flex}.burger{display:block}}
+</style>
+</head>
+<body>
+<a class="sr" href="#app">Skip to content</a>
+<header>
+  <nav class="nav" aria-label="Main">
+    <a class="logo" href="#/" aria-label="MessSaver home">🥗 Mess<span>Saver</span></a>
+    <ul class="links" id="links">
+      <li><a href="#/find" data-nav>Find food</a></li>
+      <li><a href="#/how" data-nav>How it works</a></li>
+      <li><a href="#/business" data-nav>For businesses</a></li>
+      <li><a href="#/about" data-nav>About</a></li>
+    </ul>
+    <div style="display:flex;gap:.6rem;align-items:center">
+      <span id="authslot"></span>
+      <button class="burger" id="burger" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    </div>
+  </nav>
+</header>
+<main id="app" tabindex="-1"></main>
+<footer>
+  <div class="wrap">
+    <div>© 2026 MessSaver · Made with care and zero waste</div>
+    <nav aria-label="Footer">
+      <a href="#/find">Find food</a><a href="#/how">How it works</a><a href="#/business">Businesses</a><a href="#/about">About</a><a href="#/login">Login</a><a href="#/privacy">Privacy</a>
+    </nav>
+  </div>
+</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js"}}</script>
+<script type="module">
+/* ---------------- utilities ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const app = $('#app');
+const SITE = 'https://messsaver.app';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); };
+const session = { get: () => JSON.parse(localStorage.getItem('ms_user') || 'null'), set: u => localStorage.setItem('ms_user', JSON.stringify(u)), clear: () => localStorage.removeItem('ms_user') };
+
+function setSEO({ title, desc, path }) {
+  document.title = title;
+  $('meta[name="description"]').content = desc;
+  $('link[rel="canonical"]').href = SITE + path;
+  $('meta[property="og:title"]').content = title;
+  $('meta[property="og:description"]').content = desc;
+  $('meta[property="og:url"]').content = SITE + path;
+}
+function crumbs(items) {
+  const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items.map((c, i) => ({ '@type': 'ListItem', position: i + 1, name: c.name, item: SITE + c.path })) };
+  let s = $('#bc-ld'); if (!s) { s = document.createElement('script'); s.id = 'bc-ld'; s.type = 'application/ld+json'; document.head.appendChild(s); }
+  s.textContent = JSON.stringify(ld);
+  return `<nav class="crumbs wrap" aria-label="Breadcrumb"><ol>${items.map((c, i) => i === items.length - 1 ? `<li aria-current="page">${esc(c.name)}</li>` : `<li><a href="#${c.path}">${esc(c.name)}</a></li>`).join('')}</ol></nav>`;
+}
+function renderAuthSlot() {
+  const u = session.get();
+  $('#authslot').innerHTML = u
+    ? `<span class="muted" style="font-size:.9rem;margin-right:.4rem">Hi, ${esc(u.name)}</span><button class="btn btn-g btn-sm" id="logout">Log out</button>`
+    : `<a class="btn btn-p btn-sm" href="#/login">Log in</a>`;
+  $('#logout')?.addEventListener('click', () => { session.clear(); renderAuthSlot(); toast('Logged out'); });
+}
+
+/* ---------------- 3D hero (lazy, home only) ---------------- */
+let heroStop = null;
+async function startHero(canvas) {
+  const THREE = await import('three');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(55, 1, .1, 100); cam.position.z = 9;
+  scene.add(new THREE.AmbientLight(0xffffff, .7));
+  const key = new THREE.DirectionalLight(0xffffff, 1.3); key.position.set(5, 6, 5); scene.add(key);
+  const fill = new THREE.PointLight(0x7ed957, 2, 30); fill.position.set(-6, -4, 4); scene.add(fill);
+  const pal = [0x7ed957, 0xffb347, 0xff6b6b, 0xffe66d, 0x4ecdc4];
+  const geos = [new THREE.TorusGeometry(.8, .3, 24, 64), new THREE.SphereGeometry(.7, 32, 32), new THREE.IcosahedronGeometry(.8, 0), new THREE.CylinderGeometry(.9, .9, .18, 40), new THREE.CapsuleGeometry(.35, .9, 6, 16), new THREE.TorusKnotGeometry(.5, .16, 80, 12)];
+  const shapes = [];
+  for (let i = 0; i < 18; i++) {
+    const m = new THREE.Mesh(geos[i % geos.length], new THREE.MeshPhysicalMaterial({ color: pal[i % 5], roughness: .35, clearcoat: .6 }));
+    m.position.set((Math.random() - .5) * 18, (Math.random() - .5) * 12, (Math.random() - .5) * 6 - 2);
+    m.rotation.set(Math.random() * 3, Math.random() * 3, 0); m.scale.setScalar(.5 + Math.random() * .8);
+    m.userData = { rs: (Math.random() - .5) * .01, fs: .4 + Math.random() * .8, off: Math.random() * 6.28, y0: m.position.y };
+    scene.add(m); shapes.push(m);
+  }
+  const mouse = { x: 0, y: 0 };
+  const onMove = e => { mouse.x = (e.clientX / innerWidth - .5) * 2; mouse.y = (e.clientY / innerHeight - .5) * 2; };
+  const resize = () => { const w = canvas.clientWidth, h = canvas.clientHeight; renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); };
+  addEventListener('mousemove', onMove); addEventListener('resize', resize); resize();
+  const clock = new THREE.Clock(); let raf;
+  const loop = () => {
+    const t = clock.getElapsedTime();
+    shapes.forEach(m => { m.rotation.x += m.userData.rs * 2; m.rotation.y += m.userData.rs * 3; m.position.y = m.userData.y0 + Math.sin(t * m.userData.fs + m.userData.off) * .6; });
+    cam.position.x += (mouse.x * 1.2 - cam.position.x) * .05; cam.position.y += (-mouse.y * .8 - cam.position.y) * .05;
+    renderer.render(scene, cam); raf = requestAnimationFrame(loop);
+  }; loop();
+  heroStop = () => { cancelAnimationFrame(raf); removeEventListener('mousemove', onMove); removeEventListener('resize', resize); geos.forEach(g => g.dispose()); shapes.forEach(m => m.material.dispose()); renderer.dispose(); heroStop = null; };
+}
+
+/* ---------------- Leaflet loader + mock data ---------------- */
+let leafletP;
+const loadLeaflet = () => leafletP ??= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js'; s.onload = () => res(window.L); s.onerror = rej; document.head.appendChild(s); });
+const FOODS = [
+  ['Veg biryani', 'veg', 6, 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=200&q=60', 'Vegetable biryani in a steel container'],
+  ['Dal & rice', 'veg', 4, 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=200&q=60', 'Bowl of yellow dal with rice'],
+  ['Chicken curry', 'nonveg', 3, 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?w=200&q=60', 'Chicken curry in a bowl with coriander'],
+  ['Chapati & sabzi', 'veg', 8, 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&q=60', 'Stack of chapatis with mixed vegetable sabzi'],
+  ['Idli & sambar', 'veg', 10, 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=200&q=60', 'Plate of idli with sambar and chutney'],
+  ['Egg fried rice', 'nonveg', 5, 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=200&q=60', 'Egg fried rice with spring onions'],
+  ['Paneer butter masala', 'veg', 4, 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=200&q=60', 'Paneer butter masala in a copper bowl'],
+  ['Sandwiches (12)', 'veg', 12, 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=200&q=60', 'Tray of vegetable sandwiches']
+];
+const DONORS = ['Sai Mess, Madhapur', 'Anita (home cook)', 'Green Leaf Canteen', 'Hostel Block C kitchen', 'Rahul (home cook)', 'Spice Route Restaurant', 'Priya (home cook)', 'Campus Café'];
+const hav = (a, b) => { const R = 6371, dLat = (b[0] - a[0]) * Math.PI / 180, dLon = (b[1] - a[1]) * Math.PI / 180, x = Math.sin(dLat / 2) ** 2 + Math.cos(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) * Math.sin(dLon / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
+function mockListings(c) {
+  return FOODS.map((f, i) => { const pos = [c[0] + (Math.random() - .5) * .03, c[1] + (Math.random() - .5) * .03]; return { id: i + 1, name: f[0], diet: f[1], portions: f[2], img: f[3], alt: f[4], donor: DONORS[i], pos, km: hav(c, pos), cooked: 20 + Math.floor(Math.random() * 100), expires: Date.now() + (40 + Math.random() * 120) * 60000 }; });
+}
+const mins = ms => Math.max(0, Math.round(ms / 60000));
+
+/* ---------------- views ---------------- */
+const views = {
+  '/': {
+    seo: { title: 'MessSaver – Share leftover food with neighbours, not the bin', desc: 'MessSaver connects homes, restaurants and mess halls with people nearby who need a meal. Post surplus food, get matched in minutes, hand over safely with live tracking.' },
+    html: () => `
+<section class="hero"><canvas id="hero3d" aria-hidden="true"></canvas><div class="wrap">
+  <div class="eyebrow in">● Live in 40+ cities</div>
+  <h1 class="in" style="animation-delay:.1s">Share your <em>leftover food</em>, not your guilt.</h1>
+  <p class="in" style="animation-delay:.2s">Post surplus food in seconds. Someone within 2 km picks it up with live tracking, and nothing good goes to the bin.</p>
+  <div class="in" style="animation-delay:.3s"><a class="btn btn-p" href="#/find">Find food near me</a> <a class="btn btn-g" href="#/how" style="margin-left:.6rem">How it works</a></div>
+</div></section>
+<section class="wrap"><div class="stats">
+  <div class="stat"><b data-count="1284500">0</b><span>meals rescued</span></div>
+  <div class="stat"><b data-count="612">0</b><span>tonnes CO₂ avoided</span></div>
+  <div class="stat"><b data-count="38000">0</b><span>active sharers</span></div>
+  <div class="stat"><b data-count="97">0</b><span>% pickups under 30 min</span></div>
+</div></section>
+<section class="wrap"><div class="head"><h2>Built for trust and speed.</h2><p>Everything a food-sharing network needs, in a pocket-sized app.</p></div>
+<div class="grid">
+  <article class="card"><div class="icon">🛡️</div><h3>Safety first</h3><p>Allergen tags, cook-time stamps and a freshness countdown on every listing.</p></article>
+  <article class="card"><div class="icon">📍</div><h3>Live tracking</h3><p>Follow the pickup on the map like a delivery, with ETA and a handover code.</p></article>
+  <article class="card"><div class="icon">🏢</div><h3>For businesses</h3><p>Bulk posting, scheduled pickups and donation receipts. <a href="#/business">Learn more</a>.</p></article>
+  <article class="card"><div class="icon">⭐</div><h3>Verified community</h3><p>ID-verified profiles, mutual ratings and reports that are acted on in minutes.</p></article>
+  <article class="card"><div class="icon">🌱</div><h3>Impact dashboard</h3><p>Track meals saved, CO₂ avoided and money kept out of the landfill.</p></article>
+  <article class="card"><div class="icon">🌍</div><h3>Zero fees</h3><p>Free forever for individuals. Sharing food should never cost anything.</p></article>
+</div></section>
+<section class="wrap"><div class="cta"><h2>Tonight's leftovers could be someone's dinner.</h2><p>Join thousands of sharers turning surplus into supper.</p><a class="btn btn-p" href="#/login">Create a free account</a></div></section>`,
+    mount: () => {
+      startHero($('#hero3d'));
+      document.querySelectorAll('[data-count]').forEach(el => { const t = +el.dataset.count, s = performance.now(); const step = n => { const p = Math.min(1, (n - s) / 1800), e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(t * e).toLocaleString(); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
+    }
+  },
+
+  '/find': {
+    seo: { title: 'Find leftover food near you – MessSaver', desc: 'Live map of surplus meals shared by neighbours, canteens and restaurants near you. Filter by diet, see freshness, request a pickup and track it in real time.' },
+    crumbs: [{ name: 'Home', path: '/' }, { name: 'Find food', path: '/find' }],
+    html: () => `<div class="wrap finder">
+  <div class="panel" id="panel">
+    <div class="panel-h"><h1>Food near you</h1><span class="muted" id="count"></span></div>
+    <div class="filters" role="group" aria-label="Filter by diet"><button class="chip on" data-f="all">All</button><button class="chip" data-f="veg">Veg</button><button class="chip" data-f="nonveg">Non-veg</button><button class="chip" data-f="near">Under 1 km</button></div>
+    <div class="list" id="list"><p class="muted" style="padding:1.2rem">Locating you…</p></div>
+  </div>
+  <div id="map" role="region" aria-label="Map of nearby food listings"></div>
+</div>`,
+    mount: async () => {
+      const L = await loadLeaflet();
+      const me = await new Promise(r => navigator.geolocation ? navigator.geolocation.getCurrentPosition(p => r([p.coords.latitude, p.coords.longitude]), () => r([17.4435, 78.3772]), { timeout: 5000 }) : r([17.4435, 78.3772]));
+      const map = L.map('map', { zoomControl: false }).setView(me, 15);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CARTO', maxZoom: 19 }).addTo(map);
+      const icon = (cls, emoji) => L.divIcon({ className: '', html: `<div class="pin ${cls}"><span>${emoji}</span></div>`, iconSize: [36, 36], iconAnchor: [18, 36] });
+      L.marker(me, { icon: icon('me', '🧍'), title: 'You are here' }).addTo(map).bindPopup('You are here');
+      L.circle(me, { radius: 1000, color: '#7ed957', weight: 1, fillOpacity: .04 }).addTo(map);
+      const data = mockListings(me).sort((a, b) => a.km - b.km);
+      const markers = {}; let filter = 'all', sel = null;
+      data.forEach(l => { markers[l.id] = L.marker(l.pos, { icon: icon('', l.diet === 'veg' ? '🥗' : '🍗'), title: l.name }).addTo(map).bindPopup(`<b>${esc(l.name)}</b><br>${esc(l.donor)}<br>${l.portions} portions · ${l.km.toFixed(1)} km`).on('click', () => select(l.id)); });
+      const list = $('#list');
+      function draw() {
+        const rows = data.filter(l => filter === 'all' || (filter === 'near' ? l.km < 1 : l.diet === filter));
+        $('#count').textContent = `${rows.length} listings`;
+        list.innerHTML = rows.map(l => `<article class="item ${sel === l.id ? 'sel' : ''}" data-id="${l.id}" tabindex="0">
+  <img src="${l.img}" alt="${esc(l.alt)}" loading="lazy" width="64" height="64">
+  <div><h3>${esc(l.name)} <span class="tag ${l.diet}">${l.diet === 'veg' ? 'VEG' : 'NON-VEG'}</span></h3>
+  <div class="meta"><span>${esc(l.donor)}</span><span>${l.portions} portions</span><span>${l.km.toFixed(1)} km</span><span class="fresh">⏳ ${mins(l.expires - Date.now())} min left</span></div></div></article>`).join('') || '<p class="muted" style="padding:1.2rem">Nothing matches. Try another filter.</p>';
+      }
+      function select(id) { sel = id; const l = data.find(x => x.id === id); map.flyTo(l.pos, 16, { duration: .8 }); markers[id].openPopup(); draw(); showDetail(l); }
+      function showDetail(l) {
+        list.innerHTML = `<div class="track">
+  <button class="chip" id="back">← Back to list</button>
+  <img src="${l.img.replace('w=200', 'w=600')}" alt="${esc(l.alt)}" style="width:100%;height:160px;object-fit:cover;border-radius:1rem;margin:1rem 0">
+  <h2 style="font-size:1.3rem">${esc(l.name)} <span class="tag ${l.diet}">${l.diet === 'veg' ? 'VEG' : 'NON-VEG'}</span></h2>
+  <p class="muted">${esc(l.donor)} · ${l.km.toFixed(1)} km · cooked ${l.cooked} min ago</p>
+  <p class="fresh" style="margin:.6rem 0">⏳ Fresh for ${mins(l.expires - Date.now())} more minutes</p>
+  <p class="muted" style="font-size:.9rem">Allergens: ${l.diet === 'veg' ? 'dairy, gluten' : 'none declared'}. Packed in reusable containers.</p>
+  <button class="btn btn-p full" id="req">Request pickup</button></div>`;
+        $('#back').onclick = () => { sel = null; draw(); };
+        $('#req').onclick = () => { if (!session.get()) { toast('Log in to request a pickup'); location.hash = '#/login?next=/find'; return; } track(l); };
+      }
+      let riderMarker, line, timer;
+      function track(l) {
+        const code = String(Math.floor(1000 + Math.random() * 9000));
+        const steps = ['Requested', 'Accepted', 'On the way', 'Handover'];
+        let stage = 0, prog = 0;
+        line?.remove(); riderMarker?.remove();
+        line = L.polyline([me, l.pos], { color: '#ffb347', weight: 4, dashArray: '8 10' }).addTo(map);
+        riderMarker = L.marker(me, { icon: icon('rider', '🛵'), title: 'You, en route' }).addTo(map);
+        map.fitBounds(line.getBounds(), { padding: [60, 60] });
+        const render = () => {
+          const eta = Math.max(0, Math.round((1 - prog) * l.km * 4));
+          list.innerHTML = `<div class="track">
+  <div class="row"><h2 style="font-size:1.2rem">Pickup: ${esc(l.name)}</h2><span class="tag veg">${steps[stage]}</span></div>
+  <div class="steps">${steps.map((s, i) => `<div class="step ${i < stage ? 'done' : i === stage ? 'now' : ''}" title="${s}"></div>`).join('')}</div>
+  <div class="row"><div><div class="muted" style="font-size:.85rem">Arriving in</div><div class="eta">${eta} min</div></div><div style="text-align:right"><div class="muted" style="font-size:.85rem">Pickup from</div><b>${esc(l.donor)}</b></div></div>
+  <label class="toggle" style="margin:1rem 0"><input type="checkbox" id="share" checked style="width:auto"> Share my live location with the donor</label>
+  <div class="muted" style="font-size:.85rem">Show this code at handover</div><div class="code" aria-label="Handover code">${code}</div>
+  <div class="row"><a class="btn btn-g btn-sm" href="tel:+910000000000">📞 Call donor</a><a class="btn btn-g btn-sm" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${l.pos[0]},${l.pos[1]}">🧭 Open in Maps</a><button class="btn btn-g btn-sm" id="cancel">Cancel</button></div></div>`;
+          $('#cancel').onclick = () => { clearInterval(timer); line.remove(); riderMarker.remove(); toast('Pickup cancelled'); sel = null; draw(); };
+        };
+        render();
+        timer = setInterval(() => {
+          prog = Math.min(1, prog + .012);
+          riderMarker.setLatLng([me[0] + (l.pos[0] - me[0]) * prog, me[1] + (l.pos[1] - me[1]) * prog]);
+          const ns = prog < .1 ? 0 : prog < .25 ? 1 : prog < 1 ? 2 : 3;
+          if (ns !== stage) { stage = ns; toast(steps[stage]); }
+          render();
+          if (prog >= 1) { clearInterval(timer); toast('Handover complete. +50 Karma 🌱'); }
+        }, 700);
+      }
+      list.addEventListener('click', e => { const it = e.target.closest('.item'); if (it) select(+it.dataset.id); });
+      list.addEventListener('keydown', e => { const it = e.target.closest('.item'); if (it && e.key === 'Enter') select(+it.dataset.id); });
+      $('#panel').querySelectorAll('.chip[data-f]').forEach(b => b.onclick = () => { $('#panel .chip.on')?.classList.remove('on'); b.classList.add('on'); filter = b.dataset.f; sel = null; draw(); });
+      draw();
+      this._cleanup = () => { clearInterval(timer); map.remove(); };
+    }
+  },
+
+  '/how': {
+    seo: { title: 'How MessSaver works – three taps from surplus to supper', desc: 'Snap your leftover food, get matched with a neighbour within 2 km, and hand it over safely with live tracking and a handover code.' },
+    crumbs: [{ name: 'Home', path: '/' }, { name: 'How it works', path: '/how' }],
+    html: () => `<section class="wrap"><div class="head"><h1 style="font-size:clamp(2rem,4vw,3rem)">Three taps between surplus and supper.</h1><p>Designed for the moment you're clearing the table, not for a form-filling session.</p></div>
+<div class="grid">
+  <article class="card"><div class="eyebrow">Step 01</div><div class="icon">📸</div><h3>Snap it</h3><p>Photograph the dish, set portions and a pickup window. AI drafts the description and allergen tags.</p></article>
+  <article class="card"><div class="eyebrow">Step 02</div><div class="icon">📍</div><h3>Match nearby</h3><p>People within 2 km get an alert ranked by distance and dietary fit. <a href="#/find">See the live map</a>.</p></article>
+  <article class="card"><div class="eyebrow">Step 03</div><div class="icon">🤝</div><h3>Hand it over</h3><p>Track the pickup like a delivery, confirm with a 4-digit code, and both sides earn Karma.</p></article>
+</div>
+<div class="head" style="margin-top:4rem"><h2>Frequently asked</h2></div>
+<div class="grid">
+  <article class="card"><h3>Is MessSaver free?</h3><p>Yes. Free forever for individuals. <a href="#/business">Businesses</a> get optional paid tools.</p></article>
+  <article class="card"><h3>Is the food safe?</h3><p>Every listing has a cook-time stamp, freshness countdown and allergen tags. Users are ID-verified and rated.</p></article>
+  <article class="card"><h3>What if nobody claims it?</h3><p>Listings auto-expire at the freshness limit and we suggest nearby shelters that accept bulk drops.</p></article>
+</div></section>`
+  },
+
+  '/business': {
+    seo: { title: 'MessSaver for restaurants, canteens and hostels', desc: 'Bulk post surplus food, schedule daily pickups and get donation receipts. Cut disposal costs and hit your ESG goals with MessSaver for Business.' },
+    crumbs: [{ name: 'Home', path: '/' }, { name: 'For businesses', path: '/business' }],
+    html: () => `<section class="wrap"><div class="head"><h1 style="font-size:clamp(2rem,4vw,3rem)">Turn your surplus into impact, not disposal fees.</h1><p>For restaurants, mess halls, hostels and corporate canteens.</p></div>
+<div class="grid">
+  <article class="card"><div class="icon">📦</div><h3>Bulk posting</h3><p>Post 50 portions in one go, with scheduled daily windows after service.</p></article>
+  <article class="card"><div class="icon">🧾</div><h3>Donation receipts</h3><p>Monthly statements with meal counts and CO₂ figures for CSR and ESG reports.</p></article>
+  <article class="card"><div class="icon">🚚</div><h3>Volunteer pickups</h3><p>Verified volunteer network and partner shelters for large drops.</p></article>
+</div>
+<div class="cta" style="margin-top:3rem"><h2>Onboard your kitchen in a day.</h2><p>Free for the first 500 meals. Then pay only for what you use.</p><a class="btn btn-p" href="#/login">Talk to us</a></div></section>`
+  },
+
+  '/about': {
+    seo: { title: 'About MessSaver – our mission to end food waste', desc: 'MessSaver started in a Hyderabad hostel mess in 2024. Today 38,000 sharers across 40 cities have rescued over a million meals.' },
+    crumbs: [{ name: 'Home', path: '/' }, { name: 'About', path: '/about' }],
+    html: () => `<section class="wrap" style="max-width:760px"><h1 style="font-size:clamp(2rem,4vw,3rem)">A hostel mess, a WhatsApp group, and a lot of wasted biryani.</h1>
+<p class="muted" style="margin:1.4rem 0">MessSaver began in 2024 when three students noticed their hostel mess binned 40 kg of food every night while a shelter two streets away ran short. The first version was a WhatsApp group. Today it is an app used across 40 cities.</p>
+<p class="muted">We believe the fastest way to fight food waste is to make sharing as easy as ordering. Every feature, from live tracking to handover codes, exists to make strangers trust each other with a meal.</p>
+<p style="margin-top:2rem"><a class="btn btn-p" href="#/find">See food near you</a></p></section>`
+  },
+
+  '/privacy': {
+    seo: { title: 'Privacy policy – MessSaver', desc: 'How MessSaver collects, uses and protects your data, including location sharing during pickups.' },
+    crumbs: [{ name: 'Home', path: '/' }, { name: 'Privacy', path: '/privacy' }],
+    html: () => `<section class="wrap" style="max-width:760px"><h1 style="font-size:2rem">Privacy policy</h1><p class="muted" style="margin-top:1rem">We collect only what a pickup needs: your name, contact, and location while a pickup is active. Live location is shared only with the other party and stops automatically at handover. We never sell data.</p></section>`
+  },
+
+  '/login': {
+    seo: { title: 'Log in or sign up – MessSaver', desc: 'Create a free MessSaver account to share leftover food or request pickups near you.' },
+    crumbs: [{ name: 'Home', path: '/' }, { name: 'Login', path: '/login' }],
+    html: () => `<div class="wrap"><form class="auth" id="auth" novalidate>
+  <h1>Welcome back</h1><p class="muted">Log in to share or request food.</p>
+  <label for="name">Name</label><input id="name" autocomplete="name" placeholder="Your name">
+  <div class="err" id="e-name"></div>
+  <label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com">
+  <div class="err" id="e-email"></div>
+  <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" placeholder="At least 8 characters">
+  <div class="err" id="e-pw"></div>
+  <button class="btn btn-p full" type="submit">Continue</button>
+  <div class="divider">or</div>
+  <button class="btn btn-g full" type="button" id="google" style="margin-top:0">Continue with Google</button>
+  <p class="muted" style="font-size:.8rem;margin-top:1.2rem">By continuing you agree to our <a href="#/privacy">privacy policy</a>.</p>
+</form></div>`,
+    mount: () => {
+      const f = $('#auth');
+      const next = new URLSearchParams(location.hash.split('?')[1] || '').get('next') || '/';
+      const done = u => { session.set(u); renderAuthSlot(); toast(`Welcome, ${u.name}!`); location.hash = '#' + next; };
+      f.onsubmit = e => {
+        e.preventDefault();
+        const name = $('#name').value.trim(), email = $('#email').value.trim(), pw = $('#pw').value;
+        const errs = { name: name.length < 2 ? 'Enter your name' : '', email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Enter a valid email', pw: pw.length < 8 ? 'Password must be at least 8 characters' : '' };
+        Object.entries(errs).forEach(([k, v]) => { $('#e-' + k).textContent = v; $('#' + (k === 'pw' ? 'pw' : k)).setAttribute('aria-invalid', !!v); });
+        if (Object.values(errs).some(Boolean)) return;
+        done({ name, email });
+      };
+      $('#google').onclick = () => done({ name: 'Guest', email: 'guest@example.com' });
+    }
+  },
+
+  '404': {
+    seo: { title: 'Page not found – MessSaver', desc: 'That page has gone the way of yesterday\'s leftovers. Head back to MessSaver to find food near you.' },
+    html: () => `<section class="wrap notfound"><b>404</b><h1 style="font-size:1.8rem;margin:1rem 0">This plate is empty.</h1><p class="muted">The page you asked for doesn't exist or was moved.</p><p style="margin-top:2rem"><a class="btn btn-p" href="#/">Back home</a> <a class="btn btn-g" href="#/find" style="margin-left:.6rem">Find food</a></p></section>`
+  }
+};
+
+/* ---------------- router ---------------- */
+let cleanup = null;
+function route() {
+  const path = (location.hash.slice(1) || '/').split('?')[0];
+  const v = views[path] || views['404'];
+  const is404 = !views[path];
+  cleanup?.(); cleanup = null; heroStop?.();
+  setSEO({ ...v.seo, path: is404 ? path : path });
+  let robots = $('meta[name="robots"]'); if (is404) { if (!robots) { robots = document.createElement('meta'); robots.name = 'robots'; document.head.appendChild(robots); } robots.content = 'noindex'; } else robots?.remove();
+  app.innerHTML = (v.crumbs ? crumbs(v.crumbs) : '') + v.html();
+  document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + path));
+  $('#links').classList.remove('open');
+  window.scrollTo({ top: 0 });
+  if (v.mount) { const ctx = {}; v.mount.call(ctx); cleanup = () => ctx._cleanup?.(); }
+}
+addEventListener('hashchange', route);
+$('#burger').onclick = () => { const o = $('#links').classList.toggle('open'); $('#burger').setAttribute('aria-expanded', o); };
+renderAuthSlot(); route();
+</script>
+</body>
+</html>
